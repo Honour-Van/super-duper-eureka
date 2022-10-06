@@ -11,9 +11,9 @@ def parse_csi(csi_raw):
     csi_img = csi_int[1::2]
     num_of_carrier = len(csi_real)
     csi_amp = [sqrt(csi_real[i]**2+csi_img[i]**2)
-               for i in range(num_of_carrier)]
+                for i in range(num_of_carrier)]
     csi_phs = [atan2(csi_img[i], csi_real[i])
-               for i in range(num_of_carrier)]
+                for i in range(num_of_carrier)]
 
     return [*csi_amp, *csi_phs]
 
