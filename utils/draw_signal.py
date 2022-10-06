@@ -1,7 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-    
+from math import ceil
 
 def draw_one(data: pd.Series, target='phs20', s=0, e=-1, color_range=[]):
     # 用于绘制某个确定子载波的图样，是查看功能
@@ -12,6 +12,14 @@ def draw_one(data: pd.Series, target='phs20', s=0, e=-1, color_range=[]):
     plt.show()
 
 
-def draw_static(data: pd.DataFrame):
+def draw_static(data: pd.DataFrame, targets=[*['amp'+str(x) for x in range(64)], *['phs'+str(x) for x in range(64)]]):
     # 绘制一系列的图样
-    pass
+    num_of_plots = len(targets)
+    row_of_plots = ceil(num_of_plots // 4)
+    
+    plt.figure(figsize=(20, 3*row_of_plots))
+    for i, target in enumerate(targets):
+        plt.subplot(row_of_plots, 4, i+1)
+        sns.lineplot(data=data, x='real_timestamp', y=target)
+    plt.tight_layout()
+    plt.show()
