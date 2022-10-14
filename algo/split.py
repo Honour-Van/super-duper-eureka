@@ -8,7 +8,8 @@ class Splitter:
         self.synthesised = None
         self.rolled = None
         self.rolled_agg = None
-    
+        self.finishing_points = None
+
     def interpolation(self, data: pd.DataFrame=None):
         if data is None:
             data = self.data
@@ -43,7 +44,30 @@ class Splitter:
         self.rolled_agg = rolled_agg
         return rolled, rolled_agg
     
+    def find_finishing_points(self, rolled: pd.DataFrame=None, rolled_agg: pd.DataFrame=None, items=['phs', 'filtered_phs']):
+        if rolled is None:
+            rolled = self.rolled
+        if rolled_agg is None:
+            rolled_agg = self.rolled_agg
+
+        col_gt_than_threshold = {'phs':False, 'amp':False, 'filtered_phs':False, 'filtered_amp':False}
+        finishing_points = {'phs':[0], 'amp':[0], 'filtered_phs':[0], 'filtered_amp':[0]}
+
+        for index, row in rolled.iterrows():
+            for col in rolled.columns:
+                if row[col] < rolled_agg[col]:
+                    if col_gt_than_threshold[col] and finishing_points[col][-1] + 5000 < index:
+                        # TODO 根据freq动态调整
+                        finishing_points[col].append(index)
+                    col_gt_than_threshold[col] = False
+                elif row[col] >= rolled_agg[col]:
+                    col_gt_than_threshold[col] = True
+        self.finishing_points = {k:finishing_points[k][1:] for k in items}
+        return finishing_points
+
+
     def draw_synth(self, rolled=None, rolled_agg=None):
+        palatte = {'phs':'blue', 'amp':'red', 'filtered_phs':'green', 'filtered_amp':'orange'}
         if rolled is None:
             rolled = self.rolled
         if rolled_agg is None:
@@ -52,12 +76,14 @@ class Splitter:
         x = self.synthesised['real_timestamp']
         plt.figure(figsize=(20, 10))
         for col in rolled.columns:
-            plt.plot(x, rolled[col], label=col)
-        plt.hlines(rolled_agg['amp'], x[0], x.iloc[-1], colors='b', linestyles='dashed')
-        plt.hlines(rolled_agg['phs'], x[0], x.iloc[-1], colors='orange', linestyles='dashed')
-        plt.hlines(rolled_agg['filtered_amp'], x[0], x.iloc[-1], colors='r', linestyles='dashed')
-        plt.hlines(rolled_agg['filtered_phs'], x[0], x.iloc[-1], colors='g', linestyles='dashed')
-        # plt.tight_layout()
+            plt.plot(x, rolled[col], label=col, color=palatte[col])
+            plt.hlines(rolled_agg[col], x[0], x.iloc[-1], color=palatte[col], linestyles='dashed')
+            if col in self.finishing_points:
+                for point in self.finishing_points[col]:
+                    plt.axvline(self.synthesised.loc[point, 'real_timestamp'], color=palatte[col], linestyle='--')
+
+        plt.tight_layout()
         plt.legend()
         plt.show()
+    
     
